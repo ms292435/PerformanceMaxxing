@@ -20,9 +20,14 @@ namespace Roguelike
         [Tooltip("Button of the main menu opening the High scores screen. Created at runtime if empty.")]
         [SerializeField] private Button mHighScoresButton;
 
+        [Tooltip("Button of the main menu quitting the game. Created at runtime, as a cross in the top right corner, if empty.")]
+        [SerializeField] private Button mQuitButton;
+
         private const float ButtonGap = 40f;
         private const float ScreenWidth = 3400f;
         private const float ScreenHeight = 1900f;
+        private const float QuitButtonSize = 170f;
+        private const float QuitButtonMargin = 60f;
 
         private Button mTemplateButton;
         private TMP_FontAsset mFont;
@@ -69,8 +74,10 @@ namespace Roguelike
                 mHighScoresButton = CreateMenuButton("High scores",
                     new Vector2(lTemplateRect.anchoredPosition.x + lHalfOffset, lY), lSize);
             }
+            if (mQuitButton == null) mQuitButton = CreateQuitButton();
             mHelpButton.onClick.AddListener(() => Show(mHelpScreen));
             mHighScoresButton.onClick.AddListener(ShowHighScores);
+            mQuitButton.onClick.AddListener(() => GameManager.Instance.QuitGame());
 
             mHelpScreen = CreateScreen("HOW TO PLAY", out var lHelpText);
             lHelpText.text = BuildHelpText();
@@ -171,6 +178,37 @@ namespace Roguelike
                 lLabel.fontSizeMin = 20f;
                 lLabel.fontSizeMax = lLabel.fontSize * 0.7f;
             }
+            return lButton;
+        }
+
+        /// <summary>
+        /// Creates the quit button: a red square with a cross, in the top right corner of the menu.
+        /// </summary>
+        /// <returns>The new button, with no action.</returns>
+        private Button CreateQuitButton()
+        {
+            var lButtonObject = new GameObject("Quit", typeof(RectTransform), typeof(Image), typeof(Button));
+            var lRect = (RectTransform)lButtonObject.transform;
+            lRect.SetParent(transform, false);
+            lRect.anchorMin = lRect.anchorMax = lRect.pivot = Vector2.one;
+            lRect.anchoredPosition = new Vector2(-QuitButtonMargin, -QuitButtonMargin);
+            lRect.sizeDelta = new Vector2(QuitButtonSize, QuitButtonSize);
+
+            var lImage = lButtonObject.GetComponent<Image>();
+            lImage.color = Color.white;
+
+            var lButton = lButtonObject.GetComponent<Button>();
+            lButton.targetGraphic = lImage;
+            var lColors = lButton.colors;
+            lColors.normalColor = new Color(0.62f, 0.16f, 0.14f, 1f);
+            lColors.highlightedColor = new Color(0.82f, 0.24f, 0.2f, 1f);
+            lColors.pressedColor = new Color(0.45f, 0.1f, 0.09f, 1f);
+            lColors.selectedColor = lColors.normalColor;
+            lButton.colors = lColors;
+
+            var lCross = CreateText(lRect, "X", 120f, TextAlignmentOptions.Center);
+            SetRect(lCross.rectTransform, Vector2.zero, lRect.sizeDelta);
+            lCross.fontStyle = FontStyles.Bold;
             return lButton;
         }
 

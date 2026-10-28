@@ -141,9 +141,8 @@ namespace Roguelike
             if (mMainMenuPanel != null) mMainMenuPanel.SetActive(false);
             if (mGameOverPanel != null) mGameOverPanel.SetActive(false);
 
-            // Benchmarks need an uncapped frame rate; a regular game is synced to the monitor
-            Application.targetFrameRate = -1;
-            QualitySettings.vSyncCount = pBenchmark ? 0 : 1;
+            // Benchmarks need an uncapped frame rate; a regular game follows the V-Sync setting
+            GameSettings.ApplyFrameRate(pBenchmark);
 
             if (Player.Instance != null) Player.Instance.ApplyModeStats(pBenchmark);
 

@@ -18,6 +18,7 @@ namespace Roguelike
 
         private GameObject mPanel;
         private TextMeshProUGUI mSwitchModeLabel;
+        private TextMeshProUGUI mVSyncLabel;
         private bool mIsOpen;
 
         /// <summary>
@@ -98,6 +99,7 @@ namespace Roguelike
             mIsOpen = true;
             IsOpen = true;
             mSwitchModeLabel.text = GameManager.IsBenchmarkMode ? "Switch to Game mode" : "Switch to Benchmark mode";
+            RefreshVSyncLabel();
             mPanel.SetActive(true);
             Time.timeScale = 0f;
         }
@@ -131,7 +133,27 @@ namespace Roguelike
             mSwitchModeLabel = CreateButton(lPanelRect, "Switch mode", 1,
                 () => GameManager.Instance.RestartInMode(!GameManager.IsBenchmarkMode));
             CreateButton(lPanelRect, "Main menu", 2, () => GameManager.Instance.ReturnToMainMenu());
-            CreateButton(lPanelRect, "Quit game", 3, () => GameManager.Instance.QuitGame());
+            mVSyncLabel = CreateButton(lPanelRect, "V-Sync", 3, ToggleVSync);
+            CreateButton(lPanelRect, "Quit game", 4, () => GameManager.Instance.QuitGame());
+        }
+
+        /// <summary>
+        /// Switches the V-Sync setting of the Game mode, saved for the next sessions and applied immediately.
+        /// </summary>
+        private void ToggleVSync()
+        {
+            GameSettings.VSync = !GameSettings.VSync;
+            GameSettings.ApplyFrameRate(GameManager.IsBenchmarkMode);
+            RefreshVSyncLabel();
+        }
+
+        /// <summary>
+        /// Shows the V-Sync setting; benchmarks are always uncapped, whatever the setting.
+        /// </summary>
+        private void RefreshVSyncLabel()
+        {
+            mVSyncLabel.text = GameManager.IsBenchmarkMode ? "V-Sync: Off (benchmark)"
+                : GameSettings.VSync ? "V-Sync: On" : "V-Sync: Off";
         }
 
         /// <summary>
