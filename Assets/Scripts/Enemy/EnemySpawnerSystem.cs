@@ -56,6 +56,12 @@ namespace Roguelike.DOTS
         private BatchMaterialID mBossMaterialID;
         private bool mHasBoss;
         private bool mInitialized;
+
+        /// <summary>
+        /// Regular enemy prefab whose rendering is registered. The subscene is reloaded with the scene, which gives
+        /// new prefab entities, and in a build new materials and meshes: a different prefab means a new subscene.
+        /// </summary>
+        private Entity mRegisteredPrefab;
         private EntityQuery mEnemyQuery;
         /// <summary>
         /// Enemies not yet queued for destruction. Only used for immediate destruction paths, because filtering on
@@ -83,6 +89,18 @@ namespace Roguelike.DOTS
         /// </summary>
         public void OnUpdate(ref SystemState pState)
         {
+            // --- Scene reload ---
+            // The enemies and orbs of the previous session survive in the world, but their materials were unloaded
+            // with the old subscene: remove them, and register the rendering of the new prefabs
+            if (mInitialized && SystemAPI.TryGetSingleton(out EnemySpawnerData lCurrentSpawner)
+                && lCurrentSpawner.mPrefab != mRegisteredPrefab)
+            {
+                pState.EntityManager.DestroyEntity(mEnemyQuery);
+                pState.EntityManager.DestroyEntity(mExperienceQuery);
+                UnregisterRendering(ref pState);
+                mInitialized = false;
+            }
+
             // --- Benchmark Clear Processing ---
             if (BenchmarkController.ConsumeClearRequest())
             {
@@ -102,9 +120,13 @@ namespace Roguelike.DOTS
                 return;
             }
 
-            // Benchmark: horde size set from the benchmark HUD. Game: horde size driven by the WaveDirector
+            // Benchmark: horde size set from the benchmark HUD. Game: horde size driven by the WaveDirector.
+            // Outside of a session (main menu), no horde
             bool lIsBenchmark = GameManager.IsBenchmarkMode;
-            int lTargetEnemyCount = lIsBenchmark ? BenchmarkController.TargetEnemyCount : WaveDirector.TargetEnemyCount;
+            bool lInSession = GameManager.Instance != null && GameManager.Instance.IsInSession;
+            int lTargetEnemyCount = !lInSession ? 0
+                : lIsBenchmark ? BenchmarkController.TargetEnemyCount
+                : WaveDirector.TargetEnemyCount;
             int lCurrentEnemyCount = mEnemyQuery.CalculateEntityCount();
 
             // Clear immediately if target is 0
@@ -118,8 +140,10 @@ namespace Roguelike.DOTS
                 return;
             }
 
-            // --- Dynamic Despawn / Excess Trimming ---
-            if (lCurrentEnemyCount > lTargetEnemyCount)
+            // --- Dynamic Despawn / Excess Trimming (benchmark only) ---
+            // In Game mode the target never decreases: the horde only exceeds it when the boss spawns into a full
+            // horde, and trimming would then destroy the boss (or make regular enemies vanish on screen)
+            if (lIsBenchmark && lCurrentEnemyCount > lTargetEnemyCount)
             {
                 int lExcess = lCurrentEnemyCount - lTargetEnemyCount;
                 using var lEntities = mAliveEnemyQuery.ToEntityArray(Allocator.Temp);
@@ -163,6 +187,7 @@ namespace Roguelike.DOTS
 
                     // Without a boss, surviving the run wins the game
                     WaveDirector.HasBossPrefab = mHasBoss;
+                    mRegisteredPrefab = lSpawnerData.ValueRO.mPrefab;
                     mInitialized = true;
                 }
 
@@ -293,6 +318,33 @@ namespace Roguelike.DOTS
             pMeshID = lEntitiesGraphicsSystem.RegisterMesh(lRenderMeshArray.GetMesh(lMaterialMeshInfo));
             pMaterialID = lEntitiesGraphicsSystem.RegisterMaterial(lRenderMeshArray.GetMaterial(lMaterialMeshInfo));
             return true;
+        }
+
+        /// <summary>
+        /// Releases the meshes and materials registered for the enemy prefabs of the previous subscene.
+        /// </summary>
+        private void UnregisterRendering(ref SystemState pState)
+        {
+            var lEntitiesGraphicsSystem = pState.World.GetExistingSystemManaged<EntitiesGraphicsSystem>();
+            if (lEntitiesGraphicsSystem == null) return;
+
+            lEntitiesGraphicsSystem.UnregisterMesh(mMeshID);
+            lEntitiesGraphicsSystem.UnregisterMaterial(mMaterialID);
+            if (mHasElite)
+            {
+                lEntitiesGraphicsSystem.UnregisterMesh(mEliteMeshID);
+                lEntitiesGraphicsSystem.UnregisterMaterial(mEliteMaterialID);
+            }
+            if (mHasRunner)
+            {
+                lEntitiesGraphicsSystem.UnregisterMesh(mRunnerMeshID);
+                lEntitiesGraphicsSystem.UnregisterMaterial(mRunnerMaterialID);
+            }
+            if (mHasBoss)
+            {
+                lEntitiesGraphicsSystem.UnregisterMesh(mBossMeshID);
+                lEntitiesGraphicsSystem.UnregisterMaterial(mBossMaterialID);
+            }
         }
 
         /// <summary>
