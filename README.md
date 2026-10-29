@@ -4,12 +4,13 @@
 [![DOTS / Entities](https://img.shields.io/badge/Unity%20DOTS-Entities%206.4-blue?logo=unity)](https://unity.com/dots)
 [![Burst Compiler](https://img.shields.io/badge/Burst-Compiled-green)](https://docs.unity3d.com/Packages/com.unity.burst@latest)
 [![Architecture](https://img.shields.io/badge/Architecture-Hybrid%20ECS%20%2F%20Facade-orange)](#phase-2-dotsecs-hybrid-architecture)
+[![Play on itch.io](https://img.shields.io/badge/Play-itch.io-fa5c5c?logo=itchdotio&logoColor=white)](https://elven21.itch.io/performancemaxxing)
 
 A performance benchmark and portfolio project developed in **Unity 6**. The same Survivor-like game is implemented twice, once with **classic Object-Oriented Programming (MonoBehaviour)** and once with the **Data-Oriented Technology Stack (DOTS / ECS)**, then profiled under identical conditions to measure where each architecture reaches its limits, and why.
 
 > ### DOTS/ECS handles **30× more enemies** at a playable framerate (8,000 → 250,000), and simulates them **91× faster** (45.59 ms → 0.50 ms at 10,000 enemies).
 
-The DOTS version is also a **playable game**: a 5-minute survival run against a horde of up to 20,000 enemies, ending with a final boss (see [Game Mode](#game-mode)).
+The DOTS version is also a **playable game**, **PerformanceMaxxing**: a 5-minute survival run against a horde of up to 20,000 enemies, ending with a final boss (see [Game Mode](#game-mode)). **[Download it on itch.io](https://elven21.itch.io/performancemaxxing)** (Windows).
 
 ![In-Game Horde Benchmark](Documentation/images/gameplay_horde.png)
 
@@ -370,7 +371,7 @@ This is **Amdahl's law** in practice: the simulation is now a small part of the 
 <a id="game-mode"></a>
 ## Game Mode: A Playable Survivor-like on Top of ECS
 
-The benchmark scene doubles as a real game: a **5-minute survival run** whose horde grows from a handful of enemies to **20,000**, with elites, fast runner packs, four weapons with upgrades and mastery bonuses, rare pickups (heal, magnet, bomb) and a **final boss** at 5:00. The Benchmark mode is still one click away in the main menu.
+The benchmark scene doubles as a real game: a **5-minute survival run** whose horde grows from a handful of enemies to **20,000**, with elites, fast runner packs, four weapons with upgrades and mastery bonuses, rare pickups (heal, magnet, bomb) and a **final boss** at 5:00. The main menu also has a How to play screen and a local high score table (top 10, saved as JSON in the player's data folder), and the pause menu toggles V-Sync. The Benchmark mode is still one click away in the main menu.
 
 ```mermaid
 flowchart LR
@@ -420,6 +421,7 @@ flowchart LR
 - **Less total work can still be slower.** The first sorted grid halved the CPU time but ran its sort on a single thread, lengthening the critical path. Parallelizing it with atomics spread over many counters fixed it.
 - **Baking merges render data per subscene.** All the enemy prefabs share a single `RenderMeshArray`: registering "the first mesh and material" gave every elite the regular enemy's sprite. The spawner now reads each prefab's own index from its `MaterialMeshInfo`.
 - **Entities Graphics ignores sorting layers.** Enemies are drawn by the `BatchRendererGroup`, so sprite sorting layers and orders have no effect on them, and sorting transparent sprites by distance was unreliable in builds. Enemies and orbs are now opaque (alpha clip) and ordered by the depth buffer, and the ground and the Aura are drawn first through their render queue.
+- **Test in a release build, not only in the Editor.** Two bugs only appeared in builds. The horde reached its 20,000 cap for the first time, and the excess-trimming path destroyed the boss the frame it spawned. And returning to the menu reloads the subscene: in a build its materials are unloaded and recreated, so the enemies were drawn with materials that no longer existed. The spawner now never trims in Game mode, and registers the rendering again whenever a new subscene is loaded.
 - **Change the measurement when the code changes.** Once the main thread stopped waiting for the jobs, `SimulationSystemGroup` dropped to a fraction of a millisecond without the simulation being cheaper: from then on, the frame time, the FPS and the Timeline job durations were the only meaningful metrics.
 
 ---
@@ -441,9 +443,10 @@ flowchart LR
 
 | Branch | Content |
 |:---|:---|
-| `main` | DOTS / ECS implementation |
-| `Gameplay` | DOTS / ECS implementation with the Game mode |
+| `main` | DOTS / ECS implementation, with the Game and Benchmark modes |
 | `ObjectOrientedProgramming` | Classic OOP implementation (Phase 1) |
+
+To simply play, download the Windows build on [itch.io](https://elven21.itch.io/performancemaxxing).
 
 1. Clone the repository and check out the branch to benchmark.
 2. Open the project in Unity and load `Assets/Scenes/SampleScene.unity`.
@@ -465,7 +468,7 @@ The benchmark controls are only active in Benchmark mode.
 | **C** or **Delete** | **Clear All** | Destroys all active enemies and XP orbs |
 | **F1** | **Toggle HUD** | Shows / hides the on-screen benchmark interface |
 | **W, A, S, D** (Z, Q, S, D on AZERTY) | **Movement** | Player controls |
-| **Escape** | **Pause** | Resume, switch mode, main menu, quit |
+| **Escape** | **Pause** | Resume, switch mode, toggle V-Sync, main menu, quit |
 
 ---
 
