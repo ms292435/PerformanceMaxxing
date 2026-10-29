@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce915bde9fcf3c84cb718f2c3e72cfd6, type: 3}
   m_Name: FireWand
   m_EditorClassIdentifier: 
-  Name: FireWand
+  Name: Fire Wand
   Icon: {fileID: 21300000, guid: 811e4a94c4f20a942bac6955f1faf6c8, type: 3}
-  Description: 
+  Description: Shoots fireballs at the nearest enemy
   mWeaponLogicPrefab: {fileID: 3661868248530554710, guid: c6d49c2c636ed5d43891419cd1998db2, type: 3}
   mProjectilePrefab: {fileID: 157765932926480156, guid: ed7335cd2842a9848a53efd517e0288c, type: 3}
   MaxLevel: 7

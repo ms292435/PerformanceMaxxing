@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Sword
   Icon: {fileID: 21300000, guid: 97d04dba719fca54dad1b4e250a6a7d5, type: 3}
-  Description: 
+  Description: Slashes the enemies around you
   mWeaponLogicPrefab: {fileID: 2868786558350321303, guid: 84cd154d092d6c44ab98420ce68fc3fd, type: 3}
   mProjectilePrefab: {fileID: 4287518683449023797, guid: 4c44645261b18df4fb80f7cbb8254b7f, type: 3}
   MaxLevel: 7
