@@ -396,15 +396,12 @@ flowchart LR
 <a id="challenges-lessons-learned"></a>
 ## Challenges & Lessons Learned
 
-- **Command buffers delay structural changes, which makes double destruction possible.** An enemy hit by two projectiles in the same frame was queued for destruction twice, dropping two XP orbs and throwing an exception during playback. Each enemy now carries an enableable `EnemyDeadTag`, switched on as soon as its destruction is queued; weapons, player contact and the spawner all skip enemies that are already dying.
-- **System order matters as soon as a system makes immediate structural changes.** Clearing the horde destroyed the XP orbs immediately, while a job had already queued a component addition on some of them, so the playback failed at random. The spawner now explicitly runs before the systems that record commands (`[UpdateBefore]`), instead of relying on an implicit order.
-- **Main-thread time is not job time.** In ECS, a system only schedules its job: its own time is close to zero, and the real cost appears where the main thread waits for the job (here, in the end-of-simulation command buffer). Measuring the whole `SimulationSystemGroup`, or using the Timeline view, gives the real picture.
-- **ECS has a fixed cost.** Below ~10,000 enemies, updating systems and scheduling jobs costs more than the enemies themselves, which is why the DOTS times barely move between 2,000 and 10,000.
-- **Jobs that outlive their frame must be completed explicitly.** After Step A, the weapons read the spatial grid at the start of the next frame: the job had finished long before, but Unity's safety system still threw an exception because nothing had called `Complete()` on it.
-- **Baking merges render data per subscene.** All the enemy prefabs share a single `RenderMeshArray`: registering "the first mesh and material" gave every elite the regular enemy's sprite. The spawner now reads each prefab's own index from its `MaterialMeshInfo`.
-- **Entities Graphics ignores sorting layers.** Enemies are drawn by the `BatchRendererGroup`, so sprite sorting layers and orders have no effect on them, and sorting transparent sprites by distance was unreliable in builds. Enemies and orbs are now opaque (alpha clip) and ordered by the depth buffer, and the ground and the Aura are drawn first through their render queue.
-- **Test in a release build, not only in the Editor.** Two bugs only appeared in builds. The horde reached its 20,000 cap for the first time, and the excess-trimming path destroyed the boss the frame it spawned. And returning to the menu reloads the subscene: in a build its materials are unloaded and recreated, so the enemies were drawn with materials that no longer existed. The spawner now never trims in Game mode, and registers the rendering again whenever a new subscene is loaded.
-- **Change the measurement when the code changes.** Once the main thread stopped waiting for the jobs, `SimulationSystemGroup` only measured the scheduling of the jobs, so it could no longer be compared with the Phase 2 values: from then on, I compared the frame time and the FPS.
+- **Measure each change on its own.** Neither Phase 3 optimization raised the FPS; only the profiler showed why.
+- **Main-thread time is not job time.** A system's own time hides the jobs it schedules: the Timeline view shows the real cost.
+- **ECS has a fixed cost.** Below ~10,000 enemies, scheduling the systems costs more than the enemies themselves.
+- **Structural changes need care.** Deferred destruction let an enemy die twice; an enableable `EnemyDeadTag` fixed it.
+- **Unity setup matters as much as code.** Entities Graphics ignores sorting layers and shares render data across a subscene, which caused wrong sprites and draw order.
+- **Test in a release build.** Two bugs only appeared there: the boss removed when the horde was full, and invisible enemies after a scene reload.
 
 ---
 
