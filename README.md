@@ -1,4 +1,4 @@
-# Roguelike Benchmark: Classic OOP vs. Unity DOTS/ECS
+# Classic OOP vs. Unity DOTS/ECS
 
 [![Unity Version](https://img.shields.io/badge/Unity-6000.4.5f1-black?logo=unity)](https://unity.com/)
 [![DOTS / Entities](https://img.shields.io/badge/Unity%20DOTS-Entities%206.4-blue?logo=unity)](https://unity.com/dots)
