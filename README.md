@@ -44,11 +44,10 @@ Full methodology and per-step analysis: [Performance Comparison](#performance-co
 5. [Phase 3: Profiling-Driven Optimization](#phase-3-profiling-driven-optimization)
 6. [Game Mode: A Playable Survivor-like on Top of ECS](#game-mode)
 7. [Challenges & Lessons Learned](#challenges-lessons-learned)
-8. [Next Steps](#next-steps)
-9. [Getting Started](#getting-started)
-10. [Controls & In-Game Benchmark HUD](#controls-in-game-benchmark-hud)
-11. [Code Conventions](#code-conventions)
-12. [Tech Stack](#tech-stack)
+8. [Getting Started](#getting-started)
+9. [Controls & In-Game Benchmark HUD](#controls-in-game-benchmark-hud)
+10. [Code Conventions](#code-conventions)
+11. [Tech Stack](#tech-stack)
 
 ---
 
@@ -402,16 +401,6 @@ flowchart LR
 - **Structural changes need care.** Deferred destruction let an enemy die twice; an enableable `EnemyDeadTag` fixed it.
 - **Unity setup matters as much as code.** Entities Graphics ignores sorting layers and shares render data across a subscene, which caused wrong sprites and draw order.
 - **Test in a release build.** Two bugs only appeared there: the boss removed when the horde was full, and invisible enemies after a scene reload.
-
----
-
-<a id="next-steps"></a>
-## Next Steps
-
-- **Rendering**: the frame is now bound by the render thread, so the next optimizations should target the rendering side, starting with profiling what the render thread spends its time on.
-- Move the spawning loop into a Burst job to remove the spikes when the horde grows.
-- Isolate the respective contributions of Burst and multithreading (single worker thread vs. all threads).
-- Re-measure Phase 2 with medians, for a strict before/after comparison with Phase 3.
 
 ---
 
